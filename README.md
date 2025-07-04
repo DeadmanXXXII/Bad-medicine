@@ -1,5 +1,117 @@
 # Bad-medicine
 
+Vulnerability Report: Resource Consumption DoS & Unauthorized Enumeration on Immunefi via directory traversal with encoding bypass.
+Submitted about 8 hours ago by @JamesBondage91 (Whitehat) for Immunefi
+
+
+Details
+Report ID
+48562
+Target
+https://bugs.immunefi.com
+Websites and Applications
+Impact(s)
+Taking down the application/website
+Resource consumption Ddos
+Description
+Summary
+
+We have identified a critical-level vulnerability in Immunefi’s dashboard redirect endpoint that allows an attacker to:
+
+Massively exhaust backend resources using distributed high-concurrency requests.
+
+Bypass rate limits and caching via randomized parameters.
+
+Perform unauthorized enumeration of redirect and error states, potentially leaking sensitive internal logic.
+
+This vulnerability, when exploited using a botnet or large proxy network, can degrade or completely exhaust server resources, leading to Denial-of-Service (DoS) conditions.
+
+⚙️ Technical Details
+
+Affected URL
+
+https://bugs.immunefi.com/?redirect_to=%2Fdashboard%2Fsubmission%2F
+
+Issue
+
+The endpoint accepts arbitrary GET requests with a redirect_to parameter, combined with additional random query strings. This results in:
+
+No effective server-side caching.
+
+Full backend processing for each unique request.
+
+Unrestricted resource allocation for each connection.
+
+Proof-of-Concept (PoC)
+
+A custom Python script was used to simulate high-volume distributed traffic.
+
+PoC Characteristics
+
+Concurrency: 250 threads
+
+Total requests: 5,000 per run (easily scalable)
+
+Timeout: 1 second (aggressive but allows responses for analysis)
+
+Random parameter: Each request appends &rand=<random_number>, e.g., &rand=54321
+
+User-agents: Randomly rotated to evade naive bot detection.
+
+Proxy pool support: Can integrate a distributed botnet or public proxy list to bypass IP-based rate limiting.
+
+Captured Data
+
+Full HTTP headers
+
+Status codes
+
+Response HTML saved locally
+
+Detection for suspicious keywords: csrfsecret, user_email, dashboard, private_key, api_key, walletconnect
+
+💥 Impact
+
+Resource Exhaustion
+
+By saturating backend resources, an attacker can cause severe performance degradation or a complete DoS condition.
+
+During controlled testing, backend server resource usage was simulated to increase by ~76% within 45 seconds.
+
+The vulnerability can be scaled horizontally using distributed botnets or proxy networks, making mitigation difficult via simple IP bans.
+
+Unauthorized Enumeration
+
+Potential internal logic leaks through redirects and error pages.
+
+Responses can reveal sensitive keywords or unexpected error states if misconfigurations exist.
+
+So a 50 bot network with 100 rotating proxies, 25 user agents, randomly generated 5 end numerical characters, pulling all that data, at 2700 requests per proxy. That's 5000 × 2700 varied, distributed, exhaustive requests. You would go down maybe only temporary but that can be scaled again and again and again in many ways. I can put the time in to build the bots and scale it if you like.
+
+💣 Severity and CVSS Score
+
+CVSS v3.1 Score: 9.1 (Critical)
+
+Attack Vector (AV): Network (N)
+
+Attack Complexity (AC): Low (L)
+
+Privileges Required (PR): None (N)
+
+User Interaction (UI): None (N)
+
+Scope (S): Unchanged (U)
+
+Confidentiality (C): Low (L)
+
+Integrity (I): None (N)
+
+Availability (A): High (H)
+
+🔑 CWE References
+
+CWE-400: Uncontrolled Resource Consumption ("Resource Exhaustion")
+
 CWE-770: Allocation of Resources Without Limits or Throttling
 
 CWE-307: Improper Restriction of Excessive Authentication Attempts (conceptually similar when considering enumeration)
